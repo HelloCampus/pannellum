@@ -7,8 +7,8 @@ How to `release` from this fork:
 
 Prerequisites: [python3](https://formulae.brew.sh/formula/python@3.9#default) and [java](https://formulae.brew.sh/cask/oracle-jdk-javadoc#default) are needed for the build to succeed.
 
-1. from the root folder run the [build.sh](https://github.com/mpetroff/pannellum/blob/2.5.6/utils/build/build.sh) file from the cli:
-`> ./utils/build/build.sh`
+1. from the root folder cd into `utils/build/` then run the [build.sh](https://github.com/mpetroff/pannellum/blob/2.5.6/utils/build/build.sh) file from the cli:
+`>./build.sh`
 2. new/updated files will be created in the `<root_folder>/build`: pannellum.css, pannellum.htm, pannellum.js
 3. commit and push the `<root_folder>/build` folder back into this repo
 4. reinstall the npm packages in the TGC and Server app and you will have the updated Pannellum
