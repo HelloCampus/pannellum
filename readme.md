@@ -1,3 +1,19 @@
+# Pannellum HelloCampus20 fork
+Latest release was made on 26 November 2019 (v.2.5.6). In the mean time new updated and fixes were made but not officially released (7th January 2022 at date of this writing).
+
+We can use this fork to push (selected) updates to our TGC and Server codebase.
+
+How to `release` from this fork:
+
+Prerequisites: [python3](https://formulae.brew.sh/formula/python@3.9#default) and [java](https://formulae.brew.sh/cask/oracle-jdk-javadoc#default) are needed for the build to succeed.
+
+1. from the root folder run the [build.sh](https://github.com/mpetroff/pannellum/blob/2.5.6/utils/build/build.sh) file from the cli:
+`> ./utils/build/build.sh`
+2. new/updated files will be created in the `<root_folder>/build`: pannellum.css, pannellum.htm, pannellum.js
+3. commit and push the `<root_folder>/build` folder back into this repo
+4. reinstall the npm packages in the TGC and Server app and you will have the updated Pannellum
+5. test the updated Pannellum js in the TGC & Server apps.
+
 # Pannellum
 
 [![Build Status](https://travis-ci.com/mpetroff/pannellum.svg?branch=master)](https://travis-ci.com/mpetroff/pannellum)
