@@ -29,11 +29,15 @@ window.libpannellum = (function(window, document, undefined) {
  * Creates a new panorama renderer.
  * @constructor
  * @param {HTMLElement} container - The container element for the renderer.
+ * @param {WebGLRenderingContext} [context] - Existing WebGL context (instead of container).
  */
-function Renderer(container) {
-    var canvas = document.createElement('canvas');
-    canvas.style.width = canvas.style.height = '100%';
-    container.appendChild(canvas);
+function Renderer(container, context) {
+    var canvas;
+    if (container) {
+        canvas = document.createElement('canvas');
+        canvas.style.width = canvas.style.height = '100%';
+        container.appendChild(canvas);
+    }
 
     var program, gl, vs, fs;
     var previewProgram, previewVs, previewFs;
@@ -46,6 +50,9 @@ function Renderer(container) {
     var globalParams;
     var sides = ['f', 'b', 'u', 'd', 'l', 'r'];
     var fallbackSides = ['f', 'r', 'b', 'l', 'u', 'd'];
+
+    if (context)
+        gl = context;
 
     /**
      * Initialize renderer.
@@ -285,7 +292,7 @@ function Renderer(container) {
                 faceImg.onload = onLoad;
                 faceImg.onerror = incLoaded; // ignore missing face to support partial fallback image
                 if (imageType == 'multires') {
-                    faceImg.src = path.replace('%s', fallbackSides[s]) + '.' + image.extension;
+                    faceImg.src = path.replace('%s', fallbackSides[s]) + (image.extension ? '.' + image.extension : '');
                 } else {
                     faceImg.src = image[s].src;
                 }
@@ -393,9 +400,11 @@ function Renderer(container) {
         program.drawInProgress = false;
 
         // Set background clear color (does not apply to cubemap/fallback image)
-        var color = params.backgroundColor ? params.backgroundColor : [0, 0, 0];
-        gl.clearColor(color[0], color[1], color[2], 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        if (params.backgroundColor !== null) {
+            var color = params.backgroundColor ? params.backgroundColor : [0, 0, 0];
+            gl.clearColor(color[0], color[1], color[2], 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
 
         // Look up texture coordinates location
         program.texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
@@ -711,7 +720,8 @@ function Renderer(container) {
         }
     };
     // Initialize canvas size
-    this.resize();
+    if (canvas)
+        this.resize();
 
     /**
      * Set renderer horizon pitch and roll.
@@ -739,6 +749,7 @@ function Renderer(container) {
      * @param {Object} [params] - Extra configuration parameters. 
      * @param {number} [params.roll] - Camera roll (in radians).
      * @param {string} [params.returnImage] - Return rendered image? If specified, should be 'ImageBitmap', 'image/jpeg', or 'image/png'.
+     * @param {function} [params.hook] - Hook for executing arbitrary function in this environment.
      */
     this.render = function(pitch, yaw, hfov, params) {
         var focal, i, s, roll = 0;
@@ -780,6 +791,10 @@ function Renderer(container) {
                 roll_adj = 2 * Math.PI - roll_adj;
             roll += roll_adj;
         }
+
+        // Execute function hook
+        if (params.hook)
+            params.hook(this);
 
         // If no WebGL
         if (!gl && (imageType == 'multires' || imageType == 'cubemap')) {
@@ -969,7 +984,25 @@ function Renderer(container) {
         }
         return false;
     };
-    
+
+    /**
+     * Check if base image tiles are loaded.
+     * @memberof Renderer
+     * @instance
+     * @returns {boolean} Whether or not base image tiles are loaded.
+     */
+    this.isBaseLoaded = function() {
+        if (program.currentNodes.length >= 6) {
+            for (var i = 0; i < 6; i++) {
+                if (!program.currentNodes[i].textureLoaded) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Retrieve renderer's canvas.
      * @memberof Renderer
@@ -1420,7 +1453,7 @@ function Renderer(container) {
      * @param {MultiresNode} node - Input node.
      */
     function processNextTileFallback(node) {
-        loadTexture(node, node.path + '.' + image.extension, function(texture, loaded) {
+        loadTexture(node, node.path + (image.extension ? '.' + image.extension : ''), function(texture, loaded) {
             node.texture = texture;
             node.textureLoaded = loaded ? 2 : 1;
         }, globalParams.crossOrigin);
@@ -1472,7 +1505,7 @@ function Renderer(container) {
         };
         processNextTile = function(node) {
             // Since web worker is created from a Blob, we need the absolute URL
-            var path = new URL(node.path + '.' + image.extension, window.location).href;
+            var path = new URL(node.path + (image.extension ? '.' + image.extension : ''), window.location).href;
             texturesLoading[path] = node;
             worker.postMessage([path, globalParams.crossOrigin]);
         };
